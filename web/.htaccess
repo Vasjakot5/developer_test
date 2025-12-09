@@ -1,0 +1,6 @@
+RewriteEngine on
+RewriteCond %{REQUEST_URI} !^/(login|site/login|assets|css|js|images) [NC]
+RewriteCond %{REQUEST_URI} !^/index\.php [NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /login [L,R=302]
