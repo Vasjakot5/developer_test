@@ -80,12 +80,9 @@
         $correct = 0;
         $total = 0;
         foreach ($userResults as $result) {
-            foreach ($result->answers as $answer) {
-                $total++;
-                if ($answer->is_correct) {
-                    $correct++;
-                }
-            }
+            $testQuestionCount = count($result->test->questions);
+            $correct += $result->score;
+            $total += $testQuestionCount;
         }
         $userSuccessRate = $total > 0 ? round(($correct / $total) * 100, 1) : 0;
         

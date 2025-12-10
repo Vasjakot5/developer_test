@@ -28,7 +28,8 @@ $this->title = 'Личный кабинет';
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div class="btn-group" role="group">
                         <?php if ($user->isAdmin()): ?>
-                            <h4>Панель администрирования</h4>
+                            <button type="button" class="btn btn-dt" onclick="showTab('admin')">Панель администрирования</button>
+                            <button type="button" class="btn btn-outline-dt" onclick="showTab('results')">Результаты</button>
                         <?php else: ?>
                             <button type="button" class="btn btn-dt" onclick="showTab('tests')">Тесты</button>
                             <button type="button" class="btn btn-outline-dt" onclick="showTab('results')">Результаты</button>
@@ -79,11 +80,20 @@ $this->title = 'Личный кабинет';
                                 <div class="list-group">
                                     <?php foreach ($allResults as $result): ?>
                                         <div class="list-group-item">
-                                            <div class="d-flex justify-content-between">
-                                                <h6 class="mb-1"><?= Html::encode($result->test->title) ?></h6>
-                                                <small><?= date('d.m.Y H:i', $result->created_at) ?></small>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1">
+                                                        <?= Html::encode($result->test->title) ?>
+                                                    </h6>
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <small class="me-3"><?= date('d.m.Y H:i', $result->created_at) ?></small>
+                                                    <?= Html::a('Просмотр', ['site/results', 'id' => $result->id], [
+                                                        'class' => 'btn btn-sm btn-outline-dt'
+                                                    ]) ?>
+                                                </div>
                                             </div>
-                                            <p class="mb-1">
+                                            <p class="mb-1 mt-2">
                                                 Пользователь: <strong><?= Html::encode($result->user->name) ?></strong><br>
                                                 Результат: <strong><?= $result->score ?></strong>/<?= count($result->test->questions) ?>
                                             </p>
@@ -128,11 +138,20 @@ $this->title = 'Личный кабинет';
                                 <div class="list-group">
                                     <?php foreach ($results as $result): ?>
                                         <div class="list-group-item">
-                                            <div class="d-flex justify-content-between">
-                                                <h6 class="mb-1"><?= Html::encode($result->test->title) ?></h6>
-                                                <small><?= date('d.m.Y H:i', $result->created_at) ?></small>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1">
+                                                        <?= Html::encode($result->test->title) ?>
+                                                    </h6>
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <small class="me-3"><?= date('d.m.Y H:i', $result->created_at) ?></small>
+                                                    <?= Html::a('Просмотр', ['site/results', 'id' => $result->id], [
+                                                        'class' => 'btn btn-sm btn-outline-dt'
+                                                    ]) ?>
+                                                </div>
                                             </div>
-                                            <p class="mb-1">
+                                            <p class="mb-1 mt-2">
                                                 Результат: <strong><?= $result->score ?></strong>/<?= count($result->test->questions) ?>
                                             </p>
                                         </div>

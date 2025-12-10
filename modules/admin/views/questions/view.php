@@ -6,21 +6,6 @@ use yii\widgets\DetailView;
 
 $this->title = 'Управление ответами: ' . substr($model->question_text, 0, 50) . '...';
 ?>
-<style>
-    .equal-height-card {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    .equal-height-card .card-body {
-        flex: 1;
-    }
-    .answers-container {
-        max-height: 400px;
-        overflow-y: auto;
-        margin-bottom: 15px;
-    }
-</style>
 <div class="questions-view">
 
     <div class="card">

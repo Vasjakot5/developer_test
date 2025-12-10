@@ -5,11 +5,13 @@ namespace app\modules\admin\controllers;
 use app\models\Tests;
 use app\models\TestsSearch;
 use app\models\Questions;
-use yii\web\Controller;
 use app\models\Answers;
+use app\models\UserAnswers;
+use app\models\Results;
+use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\AccessControl;
-use Yii;;
+use Yii;
 
 class TestsController extends Controller
 {
@@ -118,6 +120,7 @@ class TestsController extends Controller
     {
         $question = Questions::findOne($question_id);
         if ($question && $question->test_id == $id) {
+            UserAnswers::deleteAll(['question_id' => $question_id]);
             Answers::deleteAll(['question_id' => $question_id]);
             $question->delete();
         }
@@ -127,7 +130,30 @@ class TestsController extends Controller
 
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $test = $this->findModel($id);
+        
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $questions = Questions::find()->where(['test_id' => $id])->all();
+            
+            foreach ($questions as $question) {
+                UserAnswers::deleteAll(['question_id' => $question->id]);
+                
+                Answers::deleteAll(['question_id' => $question->id]);
+            }
+            
+            Questions::deleteAll(['test_id' => $id]);
+            
+            Results::deleteAll(['test_id' => $id]);
+            
+            $test->delete();
+            
+            $transaction->commit();
+            
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+        }
+        
         return $this->redirect(['index']);
     }
 
@@ -136,5 +162,7 @@ class TestsController extends Controller
         if (($model = Tests::findOne($id)) !== null) {
             return $model;
         }
+        
+        throw new NotFoundHttpException('Тест не найден.');
     }
 }

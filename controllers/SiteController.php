@@ -12,12 +12,13 @@ use app\models\TestForm;
 use app\models\Questions;
 use app\models\Results;
 use app\models\User;
+use app\models\UserAnswers;
+use app\models\Answers;
+use yii\web\NotFoundHttpException;
+use yii\web\ForbiddenHttpException;
 
 class SiteController extends Controller
 {
-    /**
-     * {@inheritdoc}
-     */
     public function behaviors()
     {
         return [
@@ -59,21 +60,18 @@ class SiteController extends Controller
             $totalTests = Tests::find()->count();
             $totalResults = Results::find()->count();
             
-            $results = Results::find()->with('answers')->all();
-            $totalCorrect = 0;
-            $totalIncorrect = 0;
+            $totalCorrect = Results::find()->sum('score');
             
+            $totalQuestions = 0;
+            $results = Results::find()->with('test.questions')->all();
             foreach ($results as $result) {
-                foreach ($result->answers as $answer) {
-                    if ($answer->is_correct) {
-                        $totalCorrect++;
-                    } else {
-                        $totalIncorrect++;
-                    }
+                if ($result->test && $result->test->questions) {
+                    $totalQuestions += count($result->test->questions);
                 }
             }
             
-            $totalAnswers = $totalCorrect + $totalIncorrect;
+            $totalIncorrect = $totalQuestions - $totalCorrect;
+            $totalAnswers = $totalQuestions;
             $successRate = $totalAnswers > 0 ? round(($totalCorrect / $totalAnswers) * 100, 1) : 0;
             
             return $this->render('index', [
@@ -160,7 +158,11 @@ class SiteController extends Controller
                     '<img src="./imgs/success.png" alt="Success" style="vertical-align: middle; margin-right: 10px; height: 20px;">' . 
                     'Тест завершен!');
                 return $this->redirect(['cabinet']);
-            } 
+            } else {
+                Yii::$app->session->setFlash('error', 
+                    '<img src="./imgs/info.png" alt="Error" style="vertical-align: middle; margin-right: 10px; height: 20px;">' . 
+                    'Ошибка при сохранении теста');
+            }
         }
 
         return $this->render('test', [
@@ -170,16 +172,47 @@ class SiteController extends Controller
         ]);
     }
 
-    public function actionResults()
+    public function actionResults($id = null)
     {
-        $results = Results::find()
-            ->where(['user_id' => Yii::$app->user->id])
-            ->with('test')
-            ->orderBy(['created_at' => SORT_DESC])
-            ->all();
+        if ($id) {
+            $result = Results::find()
+                ->where(['id' => $id])
+                ->with(['user', 'test'])
+                ->one();
+            
+            if (!$result) {
+                throw new NotFoundHttpException('Результат не найден.');
+            }
+            
+            if (!Yii::$app->user->identity->isAdmin() && $result->user_id != Yii::$app->user->id) {
+                throw new ForbiddenHttpException('У вас нет доступа к этому результату.');
+            }
+            
+            $questions = Questions::find()
+                ->where(['test_id' => $result->test_id])
+                ->with(['answers'])
+                ->all();
+            
+            $userAnswers = UserAnswers::find()
+                ->where(['result_id' => $id])
+                ->indexBy('question_id')
+                ->all();
+            
+            return $this->render('results', [
+                'result' => $result,
+                'questions' => $questions,
+                'userAnswers' => $userAnswers,
+            ]);
+        } else {
+            $results = Results::find()
+                ->where(['user_id' => Yii::$app->user->id])
+                ->with('test')
+                ->orderBy(['created_at' => SORT_DESC])
+                ->all();
 
-        return $this->render('results', [
-            'results' => $results,
-        ]);
+            return $this->render('results', [
+                'results' => $results,
+            ]);
+        }
     }
 }

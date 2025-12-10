@@ -18,16 +18,137 @@ class TestForm extends Model
 
     public function submitTest($testId, $userId)
     {
+        $transaction = Yii::$app->db->beginTransaction();
         
-        $result = new Results();
-        $result->user_id = $userId;
-        $result->test_id = $testId;
-        $result->score = $this->calculateScore($testId);
-        $result->start_time = date('Y-m-d H:i:s');
-        $result->end_time = date('Y-m-d H:i:s');
-        $result->created_at = time();
-        return $result->save();
+        try {
+            $result = new Results();
+            $result->user_id = $userId;
+            $result->test_id = $testId;
+            $result->score = 0;
+            $result->created_at = time();
+            $result->start_time = date('Y-m-d H:i:s');
+            $result->end_time = date('Y-m-d H:i:s');
+            
+            if (!$result->save()) {
+                return false;
+            }
+            
+            $questions = Questions::find()
+                ->where(['test_id' => $testId])
+                ->with('answers')
+                ->all();
+            
+            $correctAnswersCount = 0;
+            
+            foreach ($questions as $question) {
+                $userAnswerValue = $this->answers[$question->id] ?? '';
+                
+                $userAnswer = new UserAnswers();
+                $userAnswer->result_id = $result->id;
+                $userAnswer->question_id = $question->id;
+                
+                if ($question->type == 3) {
+                    $userAnswer->answer_text = (string)$userAnswerValue;
+                    
+                    if (!$userAnswer->save()) {
+                        return false;
+                    }
+                    
+                    if (!empty(trim($userAnswerValue))) {
+                        $correctAnswersCount++;
+                    }
+                    continue;
+                }
+                
+                if ($question->type == 1) {
+                    if (is_numeric($userAnswerValue)) {
+                        $answer = Answers::findOne($userAnswerValue);
+                        $userAnswer->answer_text = $answer ? $answer->answer_text : '';
+                    } else {
+                        $userAnswer->answer_text = (string)$userAnswerValue;
+                    }
+                    
+                    if (!$userAnswer->save()) {
+                        return false;
+                    }
+                    
+                    $correctAnswer = Answers::find()
+                        ->where(['question_id' => $question->id, 'is_correct' => 1])
+                        ->one();
+                    
+                    if ($correctAnswer) {
+                        $isCorrect = false;
+                        if (is_numeric($userAnswerValue)) {
+                            $isCorrect = ($userAnswerValue == $correctAnswer->id);
+                        } else {
+                            $isCorrect = ($userAnswer->answer_text == $correctAnswer->answer_text);
+                        }
+                        
+                        if ($isCorrect) {
+                            $correctAnswersCount++;
+                        }
+                    }
+                    
+                } elseif ($question->type == 2) {
+                    $answerIds = is_array($userAnswerValue) ? $userAnswerValue : [];
+                    $answerTexts = [];
+                    
+                    foreach ($answerIds as $answerId) {
+                        $answer = Answers::findOne($answerId);
+                        if ($answer) {
+                            $answerTexts[] = $answer->answer_text;
+                        }
+                    }
+                    
+                    $userAnswer->answer_text = implode(', ', $answerTexts);
+                    
+                    if (!$userAnswer->save()) {
+                        return false;
+                    }
+                    
+                    $correctAnswers = Answers::find()
+                        ->where(['question_id' => $question->id, 'is_correct' => 1])
+                        ->all();
+                    
+                    if (count($correctAnswers) > 0) {
+                        $allCorrect = true;
+                        
+                        foreach ($answerIds as $answerId) {
+                            $isCorrectAnswer = false;
+                            foreach ($correctAnswers as $correct) {
+                                if ($answerId == $correct->id) {
+                                    $isCorrectAnswer = true;
+                                    break;
+                                }
+                            }
+                            if (!$isCorrectAnswer) {
+                                $allCorrect = false;
+                                break;
+                            }
+                        }
+                        
+                        if ($allCorrect && count($answerIds) == count($correctAnswers)) {
+                            $correctAnswersCount++;
+                        }
+                    }
+                }
+            }
+            
+            $result->score = $correctAnswersCount;
+            if (!$result->save()) {
+                return false;
+            }
+            
+            $transaction->commit();
+            return true;
+            
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            return false;
+        }
     }
+                
+
 
     private function calculateScore($testId)
     {

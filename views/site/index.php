@@ -1,14 +1,10 @@
 <?php
-
 use yii\helpers\Html;
-
 /** @var yii\web\View $this */
 /** @var app\models\User $user */
 /** @var app\models\Test[] $tests */
 /** @var app\models\Results[] $recentResults */
 /** @var app\models\Results[] $recentAllResults */
-
-// Для админа добавляем переменные из аналитики
 if ($user->isAdmin()) {
     /** @var int $totalUsers */
     /** @var int $totalTests */
@@ -17,7 +13,6 @@ if ($user->isAdmin()) {
     /** @var int $totalIncorrect */
     /** @var float $successRate */
 }
-
 $this->title = 'Главная страница';
 ?>
 <div class="site-index">
@@ -63,9 +58,16 @@ $this->title = 'Главная страница';
                                 <div class="list-group">
                                     <?php foreach ($recentResults as $result): ?>
                                         <div class="list-group-item">
-                                            <div class="d-flex justify-content-between">
-                                                <h6 class="mb-1"><?= Html::encode($result->test->title) ?></h6>
-                                                <small><?= date('d.m.Y', $result->created_at) ?></small>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-1">
+                                                    <?= Html::encode($result->test->title) ?>
+                                                </h6>
+                                                <div class="d-flex align-items-center">
+                                                    <small class="me-3"><?= date('d.m.Y', $result->created_at) ?></small>
+                                                    <?= Html::a('Просмотр', ['site/results', 'id' => $result->id], [
+                                                        'class' => 'btn btn-sm btn-outline-dt'
+                                                    ]) ?>
+                                                </div>
                                             </div>
                                             <p class="mb-0">
                                                 Результат: <strong><?= $result->score ?></strong>/<?= count($result->test->questions) ?>
@@ -123,43 +125,48 @@ $this->title = 'Главная страница';
                         <div class="card-header">
                             <h4 class="mb-0">Последние результаты тестов</h4>
                         </div>
-                        <div class="card-body">
-                            <?php if (!empty($recentAllResults)): ?>
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>Тест</th>
-                                                <th>Пользователь</th>
-                                                <th>Результат</th>
-                                                <th>Дата</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($recentAllResults as $result): ?>
+                            <div class="card-body">
+                                <?php if (!empty($recentAllResults)): ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
                                                 <tr>
-                                                    <td><?= Html::encode($result->test->title) ?></td>
-                                                    <td><?= Html::encode($result->user->name) ?></td>
-                                                    <td>
-                                                        <span class="badge bg-<?= count($result->test->questions) > 0 && ($result->score / count($result->test->questions)) >= 0.7 ? 'success' : (count($result->test->questions) > 0 && ($result->score / count($result->test->questions)) >= 0.5 ? 'warning' : 'danger') ?>">
-                                                            <?= $result->score ?>/<?= count($result->test->questions) ?>
-                                                        </span>
-                                                    </td>
-                                                    <td><?= date('d.m.Y H:i', $result->created_at) ?></td>
+                                                    <th>Тест</th>
+                                                    <th>Пользователь</th>
+                                                    <th>Результат</th>
+                                                    <th>Дата</th>
+                                                    <th>Действия</th>
                                                 </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="text-center mt-3">
-                                    <?= Html::a('Показать все результаты', ['analytics/default'], ['class' => 'btn btn-dt', 'style'=>'width: 200px']) ?>
-                                </div>
-                            <?php else: ?>
-                                <div class="alert alert-danger text-center">
-                                    <img src="./imgs/info.png" alt="Info" style="vertical-align: middle; margin-bottom: 5px; height: 20px;">
-                                    Нет результатов тестов.
-                                </div>
-                            <?php endif; ?>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($recentAllResults as $result): ?>
+                                                    <tr>
+                                                        <td><?= Html::encode($result->test->title) ?></td>
+                                                        <td><?= Html::encode($result->user->name ?? 'Неизвестно') ?></td>
+                                                        <td>
+                                                            <span class="badge bg-<?= count($result->test->questions) > 0 && ($result->score / count($result->test->questions)) >= 0.7 ? 'success' : (count($result->test->questions) > 0 && ($result->score / count($result->test->questions)) >= 0.5 ? 'warning' : 'danger') ?>">
+                                                                <?= $result->score ?>/<?= count($result->test->questions) ?>
+                                                            </span>
+                                                        </td>
+                                                        <td><?= date('d.m.Y H:i', $result->created_at) ?></td>
+                                                        <td>
+                                                            <?= Html::a('Просмотр', ['site/results', 'id' => $result->id], ['class' => 'btn btn-sm btn-outline-dt']) ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-center mt-3">
+                                        <?= Html::a('Показать все результаты', ['analytics/default'], ['class' => 'btn btn-dt', 'style'=>'width: 200px']) ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="alert alert-danger text-center">
+                                        <img src="./imgs/info.png" alt="Info" style="vertical-align: middle; margin-bottom: 5px; height: 20px;">
+                                        Нет результатов тестов.
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>

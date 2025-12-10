@@ -5,6 +5,7 @@ namespace app\modules\admin\controllers;
 use app\models\Questions;
 use app\models\QuestionsSearch;
 use app\models\Answers;
+use app\models\UserAnswers;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;

@@ -9,7 +9,7 @@ use yii\grid\GridView;
 /** @var app\models\UserSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Управление пользователями';
+$this->title = 'Управление ролями';
 
 $totalUsers = $dataProvider->getTotalCount();
 ?>

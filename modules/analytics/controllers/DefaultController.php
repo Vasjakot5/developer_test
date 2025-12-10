@@ -7,6 +7,7 @@ use yii\web\Controller;
 use app\models\Results;
 use app\models\Tests;
 use app\models\User;
+use app\models\UserAnswers;
 use app\models\Answers;
 use Mpdf\Mpdf;
 
@@ -28,10 +29,7 @@ class DefaultController extends Controller
             $testQuestionCount = count($result->test->questions);
             $totalQuestionsInResults += $testQuestionCount;
             
-            $maxScore = $testQuestionCount;
-            
             $totalCorrect += $result->score;
-            
             $totalIncorrect += ($testQuestionCount - $result->score);
         }
         
@@ -42,7 +40,7 @@ class DefaultController extends Controller
             ->with([
                 'questions',
                 'results' => function($query) {
-                    $query->with('answers');
+                    $query->with('userAnswers');
                 }
             ])
             ->all();
@@ -58,7 +56,7 @@ class DefaultController extends Controller
             ->where(['role' => 0])
             ->with([
                 'results' => function($query) {
-                    $query->with('test.questions', 'answers');
+                    $query->with('test.questions');
                 }
             ])
             ->all();
@@ -96,8 +94,17 @@ class DefaultController extends Controller
         $totalUsers = User::find()->where(['role' => 0])->count();
         $totalTests = Tests::find()->count();
         $totalResults = Results::find()->count();
-        $totalCorrect = Answers::find()->where(['is_correct' => 1])->count();
-        $totalIncorrect = Answers::find()->where(['is_correct' => 0])->count();
+        
+        $totalCorrect = 0;
+        $totalIncorrect = 0;
+        
+        $allResults = Results::find()->with('test.questions')->all();
+        foreach ($allResults as $result) {
+            $testQuestionCount = count($result->test->questions);
+            $totalCorrect += $result->score;
+            $totalIncorrect += ($testQuestionCount - $result->score);
+        }
+        
         $totalAnswers = $totalCorrect + $totalIncorrect;
         $successRate = $totalAnswers > 0 ? round(($totalCorrect / $totalAnswers) * 100, 1) : 0;
         
@@ -111,14 +118,16 @@ class DefaultController extends Controller
         
         $activityRate = $totalUsers > 0 ? round(($activeUsers / $totalUsers) * 100, 1) : 0;
         
-        // Получаем данные для таблиц
         $tests = Tests::find()->all();
         $users = User::find()
             ->where(['role' => 0])
-            ->with('results')
+            ->with([
+                'results' => function($query) {
+                    $query->with('test.questions');
+                }
+            ])
             ->all();
         
-        // Создаем массив $stats
         $stats = [
             'totalUsers' => $totalUsers,
             'totalTests' => $totalTests,
@@ -135,7 +144,7 @@ class DefaultController extends Controller
         ];
         
         $html = $this->renderPartial('_pdf_template', [
-            'stats' => $stats, // Передаем массив $stats
+            'stats' => $stats,
             'date' => date('d.m.Y'),
         ]);
         
@@ -149,14 +158,23 @@ class DefaultController extends Controller
         
         return;
     }
-    
+
     public function actionExportExcel()
     {
         $totalUsers = User::find()->where(['role' => 0])->count();
         $totalTests = Tests::find()->count();
         $totalResults = Results::find()->count();
-        $totalCorrect = Answers::find()->where(['is_correct' => 1])->count();
-        $totalIncorrect = Answers::find()->where(['is_correct' => 0])->count();
+        
+        $totalCorrect = 0;
+        $totalIncorrect = 0;
+        
+        $allResults = Results::find()->with('test.questions')->all();
+        foreach ($allResults as $result) {
+            $testQuestionCount = count($result->test->questions);
+            $totalCorrect += $result->score;
+            $totalIncorrect += ($testQuestionCount - $result->score);
+        }
+        
         $totalAnswers = $totalCorrect + $totalIncorrect;
         $successRate = $totalAnswers > 0 ? round(($totalCorrect / $totalAnswers) * 100, 1) : 0;
         
@@ -170,14 +188,16 @@ class DefaultController extends Controller
         
         $activityRate = $totalUsers > 0 ? round(($activeUsers / $totalUsers) * 100, 1) : 0;
         
-        // Получаем данные для таблиц
         $tests = Tests::find()->all();
         $users = User::find()
             ->where(['role' => 0])
-            ->with('results')
+            ->with([
+                'results' => function($query) {
+                    $query->with('test.questions');
+                }
+            ])
             ->all();
         
-        // Создаем массив $stats
         $stats = [
             'totalUsers' => $totalUsers,
             'totalTests' => $totalTests,
@@ -194,7 +214,7 @@ class DefaultController extends Controller
         ];
         
         $html = $this->renderPartial('_excel_template', [
-            'stats' => $stats, // Передаем массив $stats
+            'stats' => $stats,
             'date' => date('d.m.Y'),
         ]);
         
@@ -214,7 +234,7 @@ class DefaultController extends Controller
             ->with([
                 'questions',
                 'results' => function($query) {
-                    $query->with(['answers', 'user']);
+                    $query->with(['userAnswers', 'user']);
                 }
             ])
             ->one();
@@ -229,18 +249,11 @@ class DefaultController extends Controller
         $userStats = [];
         
         foreach ($test->results as $result) {
-            $userCorrect = 0;
-            $userIncorrect = 0;
+            $userCorrect = $result->score;
+            $userIncorrect = count($test->questions) - $result->score;
             
-            foreach ($result->answers as $answer) {
-                if ($answer->is_correct) {
-                    $testCorrect++;
-                    $userCorrect++;
-                } else {
-                    $testIncorrect++;
-                    $userIncorrect++;
-                }
-            }
+            $testCorrect += $userCorrect;
+            $testIncorrect += $userIncorrect;
             
             $userTotal = $userCorrect + $userIncorrect;
             $userRate = $userTotal > 0 ? round(($userCorrect / $userTotal) * 100, 1) : 0;
@@ -277,7 +290,7 @@ class DefaultController extends Controller
             ->where(['id' => $id, 'role' => 0])
             ->with([
                 'results' => function($query) {
-                    $query->with(['test', 'answers']);
+                    $query->with(['test', 'userAnswers']);
                 }
             ])
             ->one();
@@ -292,22 +305,16 @@ class DefaultController extends Controller
         $totalScore = 0;
         
         foreach ($user->results as $result) {
-            $testCorrect = 0;
-            $testIncorrect = 0;
+            $testQuestionCount = count($result->test->questions);
+            $testCorrect = $result->score;
+            $testIncorrect = $testQuestionCount - $result->score;
             
-            foreach ($result->answers as $answer) {
-                if ($answer->is_correct) {
-                    $userCorrect++;
-                    $testCorrect++;
-                } else {
-                    $userIncorrect++;
-                    $testIncorrect++;
-                }
-            }
+            $userCorrect += $testCorrect;
+            $userIncorrect += $testIncorrect;
+            $totalScore += $result->score;
             
             $testTotal = $testCorrect + $testIncorrect;
             $testRate = $testTotal > 0 ? round(($testCorrect / $testTotal) * 100, 1) : 0;
-            $totalScore += $result->score;
             
             $testStats[] = [
                 'test' => $result->test,

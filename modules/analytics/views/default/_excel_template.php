@@ -24,15 +24,14 @@ foreach ($stats['users'] as $user) {
     $correct = 0;
     $total = 0;
     foreach ($userResults as $result) {
-        foreach ($result->answers as $answer) {
-            $total++;
-            if ($answer->is_correct) $correct++;
-        }
+        $testQuestionCount = count($result->test->questions);
+        $correct += $result->score;
+        $total += $testQuestionCount;
     }
     $userSuccessRate = $total > 0 ? round(($correct / $total) * 100, 1) : 0;
     
     $completionRate = $stats['totalTests'] > 0 ? round((count($userResults) / $stats['totalTests']) * 100, 1) : 0;
     
-    echo $user->name . "," . count($userResults) . "," . $completionRate . "," . $userSuccessRate . "\n";
+    echo $user->email . "," . count($userResults) . "," . $completionRate . "," . $userSuccessRate . "\n";
 }
 ?>

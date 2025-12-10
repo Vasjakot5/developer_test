@@ -414,3 +414,17 @@ a.desc:after {
     hyphens: auto;
     max-width: 100%;
 }
+
+.equal-height-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.equal-height-card .card-body {
+    flex: 1;
+}
+.answers-container {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}

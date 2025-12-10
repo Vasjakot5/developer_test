@@ -4,36 +4,13 @@ namespace app\models;
 
 use Yii;
 
-/**
- * This is the model class for table "results".
- *
- * @property int $id
- * @property int $user_id
- * @property int $test_id
- * @property int $score
- * @property string $start_time
- * @property string $end_time
- * @property int $created_at
- *
- * @property Answers[] $answers
- * @property Tests $test
- * @property Users $user
- */
 class Results extends \yii\db\ActiveRecord
 {
-
-
-    /**
-     * {@inheritdoc}
-     */
     public static function tableName()
     {
         return 'results';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function rules()
     {
         return [
@@ -45,9 +22,6 @@ class Results extends \yii\db\ActiveRecord
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function attributeLabels()
     {
         return [
@@ -62,19 +36,15 @@ class Results extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Answers]].
-     *
-     * @return \yii\db\ActiveQuery
+     * Gets query for [[UserAnswers]].
      */
-    public function getAnswers()
+    public function getUserAnswers()
     {
-        return $this->hasMany(Answers::class, ['result_id' => 'id']);
+        return $this->hasMany(UserAnswers::class, ['result_id' => 'id']);
     }
 
     /**
      * Gets query for [[Test]].
-     *
-     * @return \yii\db\ActiveQuery
      */
     public function getTest()
     {
@@ -83,12 +53,9 @@ class Results extends \yii\db\ActiveRecord
 
     /**
      * Gets query for [[User]].
-     *
-     * @return \yii\db\ActiveQuery
      */
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }
-
 }
