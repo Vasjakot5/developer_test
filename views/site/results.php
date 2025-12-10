@@ -161,10 +161,7 @@ if (isset($result)) {
 
                 <div class="mt-4 text-center">
                     <div class="btn-group" role="group">
-                        <?= Html::a('Вернуться к результатам', ['site/results'], ['class' => 'btn btn-dt', 'style'=>'width: 250px']) ?>
-                        <?php if (Yii::$app->user->identity->isAdmin()): ?>
-                            <?= Html::a('Назад в кабинет', ['site/cabinet'], ['class' => 'btn btn-outline-dt', 'style'=>'width: 150px']) ?>
-                        <?php endif; ?>
+                            <?= Html::a('Назад в кабинет', ['site/cabinet'], ['class' => 'btn btn-dt', 'style'=>'width: 150px']) ?>
                     </div>
                 </div>
             </div>
